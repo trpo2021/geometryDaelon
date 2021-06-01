@@ -1,70 +1,61 @@
-#include "libgeometry/checkcoords.h"
-#include "libgeometry/checkgeometry.h"
-#include "libgeometry/perim.h"
-#include <ctype.h>
-#include <math.h>
+#include <libgeometry/header.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define MAX_SIZE_OF_STRING 1000
 
-int main()
+int main(void)
 {
-    int sig = 0;
-    double arr[2];
-    double save_arr[3];
-    double* save_x = NULL;
-    double* save_y = NULL;
-    double* save_rad = NULL;
-    double* save_p = NULL;
-    double* save_s = NULL;
-    int i, count_fig = 0;
-    for (i = 0; i > -1; i++) {
-        count_fig++;
-        char mcoord[50] = "";
-        char mrad[50] = "";
-        int i;
-        char instr[100] = "";
-        fgets(instr, 100, stdin);
-        if (instr[0] == '\n')
-            break;
+    int number_of_figures = 0;
+    char input_data[MAX_SIZE_OF_STRING];
+    int length = 1;
+    printf("Enter the data or \"0\" to exit the app: \n");
+    CircleTokens* array_of_shapes = malloc(sizeof(CircleTokens));
+    char example_of_circle[] = "circle";
+    char figure[7];
+    ShapeParameters* parameters = malloc(sizeof(ShapeParameters));
 
-        char out[100] = "";
-        strncpy(out, instr, 100);
-        for (i = 0; i < 100; i++) {
-            instr[i] = tolower(instr[i]);
+    while (*fgets(input_data, MAX_SIZE_OF_STRING, stdin) != '0')
+    {
+        int data_length = strlen(input_data);
+        array_of_shapes = realloc(array_of_shapes, sizeof(CircleTokens) * length);
+        parameters = realloc(parameters, sizeof(ShapeParameters) * length);
+        CircleTokens circle_struct;
+        circle_struct = make_circle_tokens(data_length, input_data, circle_struct);
+        strncpy(figure, input_data, circle_struct.op_bracket);
+
+        if (strcmp(figure, example_of_circle) != 0)
+        {
+            printf("Incorrect figure. Expected \"circle\" or \"triangle\".\n.");
+            return -1;
         }
-        sig = check_circle(instr);
-        warning(sig);
-        sig = check_digit(instr, mcoord, mrad, save_arr);
-        warning(sig);
-        save_rad = realloc(save_rad, count_fig * sizeof(double));
-        save_rad[count_fig - 1] = save_arr[0];
-        save_x = realloc(save_x, count_fig * sizeof(double));
-        save_x[count_fig - 1] = save_arr[1];
-        save_y = realloc(save_y, count_fig * sizeof(double));
-        save_y[count_fig - 1] = save_arr[2];
-        coord_and_rad(mrad, arr);
-        save_p = realloc(save_p, count_fig * sizeof(double));
-        save_p[count_fig - 1] = arr[1];
-        save_s = realloc(save_s, count_fig * sizeof(double));
-        save_s[count_fig - 1] = arr[0];
+        if (fill_circle_coord(&circle_struct, input_data) != -1)
+        {
+            exception_print(fill_circle_coord(&circle_struct, input_data));
+            return -1;
+        }
+        array_of_shapes[number_of_figures] = circle_struct;
+        parameters[number_of_figures].perimeter = find_circle_perimeter(circle_struct);
+        parameters[number_of_figures].area = find_circle_area(circle_struct);
+        number_of_figures++;
+        length++;
     }
-    for (int i = 0; i < count_fig - 1; i++) {
-        printf("%d) circle(%f %f,%f)\n",
-               i + 1,
-               save_x[i],
-               save_y[i],
-               save_rad[i]);
-        printf("square=%f\n", save_s[i]);
-        printf("perimetr=%f\n", save_p[i]);
-        printf("intersec:");
-        intersec(i, count_fig - 1, save_rad, save_x, save_y);
-    }
-    free(save_rad);
-    free(save_x);
-    free(save_y);
-    free(save_s);
-    free(save_p);
+    printf("\n\n\n");
+    for (int i = 0; i < number_of_figures; i++)
+    {
+        int j = 0;
+        printf("%d.  ", i + 1);
+        print_figure(&array_of_shapes[i], &parameters[i]);
+        collision(array_of_shapes, &array_of_shapes[i], number_of_figures, &parameters[i]);
+        printf("      intersects:\n");
 
-    return 0;
+        while (parameters[i].coll[j] != -1)
+        {
+            if (parameters[i].coll[j] == 1)
+                printf("        %d. Circle\n", j + 1);
+            j++;
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
